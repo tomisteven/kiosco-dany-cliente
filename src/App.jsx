@@ -13,6 +13,7 @@ import Products from './pages/Products';
 import Categories from './pages/Categories';
 import Sales from './pages/Sales';
 import Reports from './pages/Reports';
+import Statistics from './pages/Statistics';
 import Stock from './pages/Stock';
 import Users from './pages/Users';
 
@@ -42,6 +43,7 @@ function App() {
               <Route path="categories" element={<Categories />} />
               <Route path="sales" element={<Sales />} />
               <Route path="reports" element={<Reports />} />
+              <Route path="statistics" element={<Statistics />} />
               <Route path="stock" element={<Stock />} />
               
               <Route path="users" element={

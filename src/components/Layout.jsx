@@ -12,7 +12,8 @@ import {
   Users, 
   LogOut,
   Menu,
-  X
+  X,
+  TrendingUp
 } from 'lucide-react';
 
 const Layout = () => {
@@ -31,6 +32,7 @@ const Layout = () => {
   ];
 
   if (user?.rol === 'admin') {
+    menuItems.push({ name: 'Estadísticas', path: '/statistics', icon: TrendingUp });
     menuItems.push({ name: 'Usuarios', path: '/users', icon: Users });
   }
 
