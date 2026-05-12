@@ -7,8 +7,13 @@ import toast from 'react-hot-toast';
 const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
 
 const Reports = () => {
+  // Función para obtener la fecha actual en Argentina (YYYY-MM-DD)
+  const getTodayAR = () => {
+    return new Date().toLocaleDateString("en-CA", { timeZone: 'America/Argentina/Buenos_Aires' });
+  };
+
   const [period, setPeriod] = useState('daily');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(getTodayAR());
   const [data, setData] = useState(null);
   const [topProducts, setTopProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +26,7 @@ const Reports = () => {
     setLoading(true);
     try {
       let d = date;
-      if (!d) d = new Date().toISOString().split('T')[0];
+      if (!d) d = getTodayAR();
       
       const [resReport, resTop] = await Promise.all([
         api.get(`/reports/${period}?date=${d}`),

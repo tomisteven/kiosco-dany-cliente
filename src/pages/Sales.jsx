@@ -11,9 +11,14 @@ const Sales = () => {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   
+  // Función para obtener la fecha actual en Argentina (YYYY-MM-DD)
+  const getTodayAR = () => {
+    return new Date().toLocaleDateString("en-CA", { timeZone: 'America/Argentina/Buenos_Aires' });
+  };
+
   // Filters
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(getTodayAR());
+  const [endDate, setEndDate] = useState(getTodayAR());
 
   // Modal
   const [selectedSale, setSelectedSale] = useState(null);
@@ -93,7 +98,19 @@ const Sales = () => {
     <div className="space-y-6 h-full flex flex-col">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
         <div>
-          <h2 className="text-3xl font-bold text-textLight">Historial de Ventas</h2>
+          <h2 className="text-3xl font-bold text-textLight flex items-center gap-3">
+            Historial de Ventas
+            {!loading && (
+              <>
+                <span className="bg-primary/20 text-primary text-sm px-3 py-1 rounded-full border border-primary/30">
+                  {sales.length} {sales.length === 1 ? 'venta' : 'ventas'}
+                </span>
+                <span className="bg-emerald-500/20 text-emerald-400 text-sm px-3 py-1 rounded-full border border-emerald-500/30">
+                  {formatCurrency(sales.reduce((acc, curr) => acc + (curr.estado === 'completada' ? curr.totalFinal : 0), 0))}
+                </span>
+              </>
+            )}
+          </h2>
           <p className="text-textMuted text-sm mt-1">Consulta y anulación de tickets emitidos</p>
         </div>
         <div className="flex flex-wrap gap-3 bg-surface p-2 rounded-xl border border-slate-800 items-center">
