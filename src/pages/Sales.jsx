@@ -101,14 +101,22 @@ const Sales = () => {
           <h2 className="text-3xl font-bold text-textLight flex items-center gap-3">
             Historial de Ventas
             {!loading && (
-              <>
-                <span className="bg-primary/20 text-primary text-sm px-3 py-1 rounded-full border border-primary/30">
-                  {sales.length} {sales.length === 1 ? 'venta' : 'ventas'}
+              <div className="flex gap-2">
+                <span className="bg-slate-800 text-textMuted text-xs px-3 py-1 rounded-full border border-slate-700" title="Total de tickets generados">
+                  {sales.length} {sales.length === 1 ? 'ticket' : 'tickets'}
                 </span>
-                <span className="bg-emerald-500/20 text-emerald-400 text-sm px-3 py-1 rounded-full border border-emerald-500/30">
+                <span className="bg-primary/20 text-primary text-xs px-3 py-1 rounded-full border border-primary/30" title="Ventas completadas">
+                  {sales.filter(s => s.estado === 'completada').length} {sales.filter(s => s.estado === 'completada').length === 1 ? 'venta' : 'ventas'}
+                </span>
+                {sales.some(s => s.estado === 'anulada') && (
+                  <span className="bg-danger/20 text-danger text-xs px-3 py-1 rounded-full border border-danger/30">
+                    {sales.filter(s => s.estado === 'anulada').length} anulada{sales.filter(s => s.estado === 'anulada').length !== 1 ? 's' : ''}
+                  </span>
+                )}
+                <span className="bg-emerald-500/20 text-emerald-400 text-xs px-3 py-1 rounded-full border border-emerald-500/30">
                   {formatCurrency(sales.reduce((acc, curr) => acc + (curr.estado === 'completada' ? curr.totalFinal : 0), 0))}
                 </span>
-              </>
+              </div>
             )}
           </h2>
           <p className="text-textMuted text-sm mt-1">Consulta y anulación de tickets emitidos</p>
