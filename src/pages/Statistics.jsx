@@ -25,14 +25,23 @@ import toast from 'react-hot-toast';
 
 const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
 
+const getTodayAR = () => {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+};
+
 const Statistics = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [businessData, setBusinessData] = useState(null);
+  const [businessLoading, setBusinessLoading] = useState(true);
+  const [month, setMonth] = useState(getTodayAR().split('-')[1]);
+  const [year, setYear] = useState(getTodayAR().split('-')[0]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     fetchHistoricalStats();
+    fetchBusinessDaysStats();
   }, []);
 
   const fetchHistoricalStats = async () => {
@@ -53,6 +62,33 @@ const Statistics = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchBusinessDaysStats = async () => {
+    setBusinessLoading(true);
+    try {
+      const params = new URLSearchParams();
+      params.set('year', year);
+      params.set('month', month);
+
+      const res = await api.get(`/reports/business-days?${params.toString()}`);
+      setBusinessData(res.data);
+    } catch (error) {
+      console.error(error);
+      toast.error('Error al cargar el detalle mensual');
+    } finally {
+      setBusinessLoading(false);
+    }
+  };
+
+  const formatBusinessDate = (dateKey) => {
+    const date = new Date(`${dateKey}T12:00:00-03:00`);
+    return new Intl.DateTimeFormat('es-AR', {
+      weekday: 'short',
+      day: '2-digit',
+      month: '2-digit',
+      timeZone: 'America/Argentina/Buenos_Aires'
+    }).format(date);
   };
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f43f5e'];
@@ -147,6 +183,153 @@ const Statistics = () => {
             {data.stock.productosBajoStock} productos con bajo stock
           </div>
         </div>
+      </div>
+
+      <div className="bg-surface p-6 rounded-2xl border border-slate-800 shadow-lg space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+          <div>
+            <h3 className="text-xl font-bold text-textLight">Detalle mensual por días hábiles</h3>
+            <p className="text-sm text-textMuted mt-1">Mostrando solo de lunes a sábado para el mes seleccionado.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-textMuted mb-2">Mes</label>
+              <select
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+                className="bg-background border border-slate-700 rounded-lg px-3 py-2 text-sm text-textLight focus:outline-none focus:border-primary"
+              >
+                <option value="01">Enero</option>
+                <option value="02">Febrero</option>
+                <option value="03">Marzo</option>
+                <option value="04">Abril</option>
+                <option value="05">Mayo</option>
+                <option value="06">Junio</option>
+                <option value="07">Julio</option>
+                <option value="08">Agosto</option>
+                <option value="09">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-textMuted mb-2">Año</label>
+              <input
+                type="number"
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+                className="bg-background border border-slate-700 rounded-lg px-3 py-2 text-sm text-textLight focus:outline-none focus:border-primary w-28"
+              />
+            </div>
+            <button
+              onClick={fetchBusinessDaysStats}
+              className="bg-primary hover:bg-primaryDark text-white px-4 py-2 rounded-xl transition-colors flex items-center gap-2"
+            >
+              <Activity size={18} />
+              Ver mes
+            </button>
+          </div>
+        </div>
+
+        {businessLoading ? (
+          <div className="flex justify-center py-12">
+            <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : businessData ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-background/50 p-4 rounded-xl border border-slate-800">
+                <p className="text-textMuted text-xs mb-1">Facturación mensual</p>
+                <p className="text-xl font-bold text-textLight">{formatCurrency(businessData.totales.montoTotal)}</p>
+              </div>
+              <div className="bg-background/50 p-4 rounded-xl border border-slate-800">
+                <p className="text-textMuted text-xs mb-1">Ganancia neta</p>
+                <p className="text-xl font-bold text-emerald-400">{formatCurrency(businessData.totales.gananciaNeta)}</p>
+              </div>
+              <div className="bg-background/50 p-4 rounded-xl border border-slate-800">
+                <p className="text-textMuted text-xs mb-1">Tickets</p>
+                <p className="text-xl font-bold text-textLight">{businessData.totales.totalVentas}</p>
+              </div>
+              <div className="bg-background/50 p-4 rounded-xl border border-slate-800">
+                <p className="text-textMuted text-xs mb-1">Promedio por ticket</p>
+                <p className="text-xl font-bold text-textLight">{formatCurrency(businessData.totales.ticketPromedio)}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <div className="xl:col-span-2 bg-background/40 rounded-xl border border-slate-800 p-4">
+                <h4 className="text-lg font-semibold text-textLight mb-4">Ventas por día hábil</h4>
+                <div className="h-80 w-full">
+                  {businessData.timeline.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={businessData.timeline.map((item) => ({
+                        ...item,
+                        displayDate: formatBusinessDate(item._id)
+                      }))}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                        <XAxis dataKey="displayDate" stroke="#64748b" fontSize={12} tickMargin={10} />
+                        <YAxis stroke="#64748b" fontSize={12} tickFormatter={(val) => `$${val / 1000}k`} />
+                        <RechartsTooltip
+                          contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#f8fafc' }}
+                          formatter={(value) => formatCurrency(value)}
+                        />
+                        <Legend />
+                        <Bar dataKey="montoTotal" name="Facturación" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                        <Bar dataKey="gananciaNeta" name="Ganancia" fill="#10b981" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-textMuted">No hay ventas en días hábiles para este mes</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-background/40 rounded-xl border border-slate-800 p-4">
+                <h4 className="text-lg font-semibold text-textLight mb-4">Métodos de pago</h4>
+                <div className="space-y-3">
+                  {businessData.ventasPorMetodoPago.length > 0 ? businessData.ventasPorMetodoPago.map((item) => (
+                    <div key={item._id} className="flex items-center justify-between text-sm">
+                      <span className="text-textLight capitalize">{item._id}</span>
+                      <span className="text-textMuted">{formatCurrency(item.total)}</span>
+                    </div>
+                  )) : (
+                    <p className="text-sm text-textMuted">Sin datos para este mes.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto border border-slate-800 rounded-xl">
+              <table className="w-full text-left text-sm text-textLight">
+                <thead className="bg-slate-900 text-xs text-textMuted uppercase border-b border-slate-800">
+                  <tr>
+                    <th className="px-4 py-3">Fecha</th>
+                    <th className="px-4 py-3 text-center">Tickets</th>
+                    <th className="px-4 py-3 text-right">Facturación</th>
+                    <th className="px-4 py-3 text-right">Costo</th>
+                    <th className="px-4 py-3 text-right">Ganancia</th>
+                    <th className="px-4 py-3 text-right">Promedio</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800 bg-background/20">
+                  {businessData.timeline.map((item) => (
+                    <tr key={item._id} className="hover:bg-slate-800/40">
+                      <td className="px-4 py-3 font-medium">{formatBusinessDate(item._id)}</td>
+                      <td className="px-4 py-3 text-center">{item.totalVentas}</td>
+                      <td className="px-4 py-3 text-right">{formatCurrency(item.montoTotal)}</td>
+                      <td className="px-4 py-3 text-right">{formatCurrency(item.costoTotal)}</td>
+                      <td className="px-4 py-3 text-right text-emerald-400">{formatCurrency(item.gananciaNeta)}</td>
+                      <td className="px-4 py-3 text-right">{formatCurrency(item.ticketPromedio)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <div className="py-12 text-center text-textMuted">No se pudo cargar el detalle mensual.</div>
+        )}
       </div>
 
       {/* Stock Valorization */}
