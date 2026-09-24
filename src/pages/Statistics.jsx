@@ -28,6 +28,8 @@ const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currenc
 const Statistics = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     fetchHistoricalStats();
@@ -36,7 +38,14 @@ const Statistics = () => {
   const fetchHistoricalStats = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/reports/historical');
+      const params = new URLSearchParams();
+      if (startDate && endDate) {
+        params.set('startDate', startDate);
+        params.set('endDate', endDate);
+      }
+
+      const url = params.toString() ? `/reports/historical?${params.toString()}` : '/reports/historical';
+      const res = await api.get(url);
       setData(res.data);
     } catch (error) {
       console.error(error);
@@ -65,14 +74,37 @@ const Statistics = () => {
           <h2 className="text-3xl font-bold text-textLight">Estadísticas Históricas</h2>
           <p className="text-textMuted text-sm mt-1">Resumen total y acumulado de toda la operación</p>
         </div>
-        <button 
-          onClick={fetchHistoricalStats}
-          className="bg-slate-800 hover:bg-slate-700 text-textLight px-4 py-2 rounded-xl border border-slate-700 transition-all flex items-center gap-2"
-        >
-          <Activity size={18} />
-          Actualizar Datos
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center bg-surface p-3 rounded-xl border border-slate-800">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="bg-background border border-slate-700 rounded-lg px-3 py-2 text-sm text-textLight focus:outline-none focus:border-primary"
+            max={endDate || undefined}
+          />
+          <span className="text-textMuted text-sm text-center">hasta</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="bg-background border border-slate-700 rounded-lg px-3 py-2 text-sm text-textLight focus:outline-none focus:border-primary"
+            min={startDate || undefined}
+          />
+          <button 
+            onClick={fetchHistoricalStats}
+            className="bg-slate-800 hover:bg-slate-700 text-textLight px-4 py-2 rounded-xl border border-slate-700 transition-all flex items-center gap-2"
+          >
+            <Activity size={18} />
+            Actualizar Datos
+          </button>
+        </div>
       </div>
+
+      {(startDate && endDate) && (
+        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-sm text-textLight">
+          Mostrando estadísticas entre <span className="font-semibold">{startDate}</span> y <span className="font-semibold">{endDate}</span>.
+        </div>
+      )}
 
       {/* Main Totals */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

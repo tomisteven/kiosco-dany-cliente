@@ -14,23 +14,37 @@ const Reports = () => {
 
   const [period, setPeriod] = useState('daily');
   const [date, setDate] = useState(getTodayAR());
+   const [startDate, setStartDate] = useState(getTodayAR());
+   const [endDate, setEndDate] = useState(getTodayAR());
   const [data, setData] = useState(null);
   const [topProducts, setTopProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+   const [useRange, setUseRange] = useState(false);
 
   useEffect(() => {
     fetchReport();
-  }, [period, date]);
+   }, [period, date, startDate, endDate, useRange]);
 
   const fetchReport = async () => {
     setLoading(true);
     try {
-      let d = date;
-      if (!d) d = getTodayAR();
-      
+         const params = new URLSearchParams();
+         let reportUrl = `/reports/${period}`;
+
+         if (useRange) {
+            const start = startDate || getTodayAR();
+            const end = endDate || start;
+            params.set('startDate', start);
+            params.set('endDate', end);
+            reportUrl = '/reports/custom';
+         } else {
+            const d = date || getTodayAR();
+            params.set('date', d);
+         }
+
       const [resReport, resTop] = await Promise.all([
-        api.get(`/reports/${period}?date=${d}`),
-        api.get(`/reports/top-products?period=${period}&date=${d}`)
+            api.get(`${reportUrl}?${params.toString()}`),
+            api.get(`/reports/top-products?period=${useRange ? 'custom' : period}&${params.toString()}`)
       ]);
       
       setData(resReport.data);
@@ -60,7 +74,8 @@ const Reports = () => {
      const encodedUri = encodeURI(csvContent);
      const link = document.createElement("a");
      link.setAttribute("href", encodedUri);
-     link.setAttribute("download", `reporte_${period}_${date}.csv`);
+     const rangeLabel = useRange ? `${startDate || 'inicio'}_a_${endDate || 'fin'}` : date;
+     link.setAttribute("download", `reporte_${useRange ? 'rango' : period}_${rangeLabel}.csv`);
      document.body.appendChild(link);
      link.click();
      document.body.removeChild(link);
@@ -81,6 +96,7 @@ const Reports = () => {
             <select 
                value={period} 
                onChange={(e) => setPeriod(e.target.value)}
+                      disabled={useRange}
                className="bg-background border border-slate-700 rounded-lg px-3 py-2 text-sm text-textLight focus:outline-none focus:border-primary"
             >
                <option value="daily">Diario</option>
@@ -88,7 +104,15 @@ const Reports = () => {
                <option value="monthly">Mensual</option>
                <option value="annual">Anual</option>
             </select>
-            {(period === 'daily' || period === 'weekly') && (
+                  <label className="flex items-center gap-2 text-sm text-textMuted px-2">
+                     <input
+                        type="checkbox"
+                        checked={useRange}
+                        onChange={(e) => setUseRange(e.target.checked)}
+                     />
+                     Rango exacto
+                  </label>
+                  {!useRange && (period === 'daily' || period === 'weekly') && (
                <input 
                   type="date"
                   value={date}
@@ -96,6 +120,23 @@ const Reports = () => {
                   className="bg-background border border-slate-700 rounded-lg px-3 py-2 text-sm text-textLight focus:outline-none focus:border-primary"
                />
             )}
+                  {useRange && (
+                     <>
+                        <input 
+                           type="date"
+                           value={startDate}
+                           onChange={(e) => setStartDate(e.target.value)}
+                           className="bg-background border border-slate-700 rounded-lg px-3 py-2 text-sm text-textLight focus:outline-none focus:border-primary"
+                        />
+                        <span className="text-textMuted text-sm">hasta</span>
+                        <input 
+                           type="date"
+                           value={endDate}
+                           onChange={(e) => setEndDate(e.target.value)}
+                           className="bg-background border border-slate-700 rounded-lg px-3 py-2 text-sm text-textLight focus:outline-none focus:border-primary"
+                        />
+                     </>
+                  )}
             <button 
                onClick={exportToCSV}
                disabled={loading || !data}
@@ -148,7 +189,10 @@ const Reports = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Grafico Evolucion */}
             <div className="lg:col-span-2 bg-surface p-6 rounded-xl border border-slate-800 shadow-sm flex flex-col">
-              <h3 className="text-lg font-semibold text-textLight mb-6">Evolución de Ventas y Ganancias</h3>
+                     <h3 className="text-lg font-semibold text-textLight mb-2">Evolución de Ventas y Ganancias</h3>
+                     <p className="text-xs text-textMuted mb-6">
+                        {useRange ? `Rango ${startDate || 'inicio'} a ${endDate || 'fin'}` : `Período ${period}`}
+                     </p>
               <div className="h-72 w-full flex-1">
                 {data.timeline.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
