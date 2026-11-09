@@ -3,9 +3,19 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    color-scheme: dark;
+  }
+
   body {
     @apply bg-background text-textLight;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Las opciones nativas de <select> heredan el fondo oscuro del tema */
+  select option {
+    background-color: #1e293b;
+    color: #f8fafc;
   }
 
   /* Scrollbar Aesthetics */
